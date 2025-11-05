@@ -19,7 +19,13 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { CodeExample, ExecutionStep } from "@/types/code-demo";
 import { useSimulatorStore } from "@/store/simulator";
@@ -49,7 +55,7 @@ export function CodeVisualizer({ example, inputs = {} }: CodeVisualizerProps) {
   const memoInputs = useMemo(() => inputs ?? {}, [inputs]);
 
   const history = useMemo(() => {
-    const steps: ExecutionStep[] = [];
+    const steps: (ExecutionStep | undefined)[] = [];
     const limit = Math.max(example.totalSteps, currentStep + 1);
 
     for (let index = 0; index <= currentStep && index < limit; index++) {
@@ -58,17 +64,27 @@ export function CodeVisualizer({ example, inputs = {} }: CodeVisualizerProps) {
       steps[index] = step;
     }
 
-    if (steps.length === 0) {
-      steps[0] = example.executeStep(0, [], memoInputs);
+    // filter out any undefined results and narrow the type to ExecutionStep[]
+    let definedSteps = steps.filter((s): s is ExecutionStep => s !== undefined);
+
+    // ensure we always have at least the initial step if nothing was produced
+    if (definedSteps.length === 0) {
+      const first = example.executeStep(0, [], memoInputs);
+      if (first) {
+        definedSteps = [first];
+      }
     }
 
-    return steps;
+    return definedSteps;
   }, [currentStep, example, memoInputs]);
 
   const executionState = history[Math.min(currentStep, history.length - 1)];
 
   const outputs = useMemo(
-    () => history.filter((step) => Boolean(step.output)).map((step) => step.output!) ,
+    () =>
+      history
+        .filter((step) => Boolean(step.output))
+        .map((step) => step.output!),
     [history]
   );
 
@@ -233,7 +249,8 @@ export function CodeVisualizer({ example, inputs = {} }: CodeVisualizerProps) {
           <div className="space-y-1 font-mono text-sm" dir="ltr">
             {example.code.map((line) => {
               const isActive = line.lineNumber === executionState.lineNumber;
-              const hasExplanation = line.explanation && line.explanation.length > 0;
+              const hasExplanation =
+                line.explanation && line.explanation.length > 0;
 
               return (
                 <motion.div
@@ -353,7 +370,7 @@ export function CodeVisualizer({ example, inputs = {} }: CodeVisualizerProps) {
                   </motion.div>
                 ))}
               </AnimatePresence>
-              {variables.length === 0 && (
+              {executionState.variables.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-4">
                   אין משתנים עדיין
                 </p>

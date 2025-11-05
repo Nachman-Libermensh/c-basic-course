@@ -12,6 +12,7 @@ interface SimulatorState {
   isPlaying: boolean;
   speed: number;
   customDefinitions: CustomExampleDefinition[];
+  isLoading: boolean;
   setSelectedExample: (id: string | null) => void;
   setInputsForExample: (
     id: string,
@@ -25,6 +26,7 @@ interface SimulatorState {
   addCustomDefinition: (definition: CustomExampleDefinition) => void;
   updateCustomDefinition: (definition: CustomExampleDefinition) => void;
   removeCustomDefinition: (id: string) => void;
+  setIsLoading: (isLoading: boolean) => void;
 }
 
 const noopStorage: Storage = {
@@ -47,6 +49,7 @@ export const useSimulatorStore = create<SimulatorState>()(
       isPlaying: false,
       speed: 1000,
       customDefinitions: [],
+      isLoading: true,
       setSelectedExample: (id) => {
         set({ selectedExampleId: id, currentStep: 0, isPlaying: false });
       },
@@ -122,6 +125,7 @@ export const useSimulatorStore = create<SimulatorState>()(
           get().clearInputsForExample(id);
         }
       },
+      setIsLoading: (isLoading) => set({ isLoading }),
     }),
     {
       name: "simulator-store",
@@ -134,6 +138,16 @@ export const useSimulatorStore = create<SimulatorState>()(
         customDefinitions: state.customDefinitions,
         speed: state.speed,
       }),
+      onRehydrateStorage: () => (state, error) => {
+        if (error) {
+          console.error("Failed to rehydrate simulator store", error);
+        }
+        if (state) {
+          state.setIsLoading(false);
+        } else {
+          useSimulatorStore.getState().setIsLoading(false);
+        }
+      },
     }
   )
 );

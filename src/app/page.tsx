@@ -1,16 +1,21 @@
 "use client";
 
-import { useMemo, useState } from "react";
+export const dynamic = "force-static";
+
+import { useCallback, useMemo, useState } from "react";
 import { ArrowRight } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
 
 import { Button } from "@/components/ui/button";
 import { ExampleSelector } from "@/components/example-selector";
 import { CodeVisualizer } from "@/components/code-visualizer";
 import { InputDialog } from "@/components/input-dialog";
 import { CustomExampleDialog } from "@/components/custom-example-dialog";
+import { Spinner } from "@/components/ui/spinner";
 import { builtInExamples, getAllExamples, getExampleById } from "@/examples";
 import { mapDefinitionsToExamples } from "@/lib/execution-helpers";
 import { useSimulatorStore } from "@/store/simulator";
+import { CodeExample } from "@/types/code-demo";
 
 export default function Home() {
   const [showInputDialog, setShowInputDialog] = useState(false);
@@ -27,18 +32,22 @@ export default function Home() {
     removeCustomDefinition,
     addCustomDefinition,
     inputsByExample,
-  } = useSimulatorStore((state) => ({
-    selectedExampleId: state.selectedExampleId,
-    setSelectedExample: state.setSelectedExample,
-    setInputsForExample: state.setInputsForExample,
-    clearInputsForExample: state.clearInputsForExample,
-    resetSimulation: state.resetSimulation,
-    resetPlayback: state.resetPlayback,
-    customDefinitions: state.customDefinitions,
-    removeCustomDefinition: state.removeCustomDefinition,
-    addCustomDefinition: state.addCustomDefinition,
-    inputsByExample: state.inputsByExample,
-  }));
+    isLoading,
+  } = useSimulatorStore(
+    useShallow((state) => ({
+      selectedExampleId: state.selectedExampleId,
+      setSelectedExample: state.setSelectedExample,
+      setInputsForExample: state.setInputsForExample,
+      clearInputsForExample: state.clearInputsForExample,
+      resetSimulation: state.resetSimulation,
+      resetPlayback: state.resetPlayback,
+      customDefinitions: state.customDefinitions,
+      removeCustomDefinition: state.removeCustomDefinition,
+      addCustomDefinition: state.addCustomDefinition,
+      inputsByExample: state.inputsByExample,
+      isLoading: state.isLoading,
+    }))
+  );
 
   const customExamples = useMemo(
     () => mapDefinitionsToExamples(customDefinitions),
@@ -63,67 +72,80 @@ export default function Home() {
     ? inputsByExample[selectedExampleId] ?? {}
     : {};
 
-  const handleExampleSelect = (exampleId: string) => {
-    const example = examples.find((item) => item.id === exampleId);
-    if (!example) return;
+  const handleExampleSelect = useCallback(
+    (example: CodeExample) => {
+      setSelectedExample(example.id);
+      const hasInputs = example.inputs && example.inputs.length > 0;
 
-    setSelectedExample(exampleId);
-    const hasInputs = example.inputs && example.inputs.length > 0;
+      if (hasInputs) {
+        setShowInputDialog(true);
+      } else {
+        setInputsForExample(example.id, {});
+      }
+    },
+    [setInputsForExample, setSelectedExample, setShowInputDialog]
+  );
 
-    if (hasInputs) {
-      setShowInputDialog(true);
-    } else {
-      setInputsForExample(exampleId, {});
-    }
-  };
+  const handleInputSubmit = useCallback(
+    (submittedInputs: Record<string, string | number>) => {
+      if (selectedExampleId) {
+        setInputsForExample(selectedExampleId, submittedInputs);
+        resetPlayback();
+      }
+      setShowInputDialog(false);
+    },
+    [resetPlayback, selectedExampleId, setInputsForExample, setShowInputDialog]
+  );
 
-  const handleInputSubmit = (submittedInputs: Record<string, string | number>) => {
-    if (selectedExampleId) {
-      setInputsForExample(selectedExampleId, submittedInputs);
-      resetPlayback();
-    }
-    setShowInputDialog(false);
-  };
-
-  const handleCancelInput = () => {
+  const handleCancelInput = useCallback(() => {
     if (selectedExampleId) {
       clearInputsForExample(selectedExampleId);
     }
     setShowInputDialog(false);
     setSelectedExample(null);
-  };
+  }, [clearInputsForExample, selectedExampleId, setSelectedExample, setShowInputDialog]);
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     resetSimulation();
     setShowInputDialog(false);
-  };
+  }, [resetSimulation, setShowInputDialog]);
 
-  const handleCreateCustom = (definition: Parameters<typeof addCustomDefinition>[0]) => {
-    addCustomDefinition(definition);
-  };
+  const handleCreateCustom = useCallback(
+    (definition: Parameters<typeof addCustomDefinition>[0]) => {
+      addCustomDefinition(definition);
+    },
+    [addCustomDefinition]
+  );
 
-  const handleRemoveCustom = (exampleId: string) => {
-    const example = examples.find((item) => item.id === exampleId);
-    if (!example || example.source !== "custom") return;
+  const handleRemoveCustom = useCallback(
+    (example: CodeExample) => {
+      if (example.source !== "custom") return;
 
-    const confirmed = window.confirm(
-      `האם למחוק את התרגיל "${example.title}"? פעולה זו אינה ניתנת לשחזור.`
-    );
+      const confirmed = window.confirm(
+        `האם למחוק את התרגיל "${example.title}"? פעולה זו אינה ניתנת לשחזור.`
+      );
 
-    if (confirmed) {
-      removeCustomDefinition(exampleId);
-    }
-  };
+      if (confirmed) {
+        removeCustomDefinition(example.id);
+      }
+    },
+    [removeCustomDefinition]
+  );
 
   return (
     <div className="min-h-screen bg-linear-to-br from-background to-muted/20 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
-        {!selectedExample ? (
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center gap-4 py-24">
+            <Spinner className="h-10 w-10 text-primary" />
+            <p className="text-sm text-muted-foreground">טוען נתונים שמורים...</p>
+          </div>
+        ) : !selectedExample ? (
           <ExampleSelector
             examples={examples}
-            onSelect={(example) => handleExampleSelect(example.id)}
+            onSelect={handleExampleSelect}
             onCreateCustom={() => setCustomDialogOpen(true)}
-            onRemoveExample={(example) => handleRemoveCustom(example.id)}
+            onRemoveExample={handleRemoveCustom}
           />
         ) : (
           <div className="space-y-4">
@@ -140,7 +162,7 @@ export default function Home() {
           </div>
         )}
 
-        {showInputDialog && selectedExample && (
+        {!isLoading && showInputDialog && selectedExample && (
           <InputDialog
             example={selectedExample}
             onSubmit={handleInputSubmit}
