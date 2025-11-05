@@ -19,7 +19,13 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { CodeExample, ExecutionStep } from "@/types/code-demo";
 import { useSimulatorStore } from "@/store/simulator";
@@ -68,7 +74,10 @@ export function CodeVisualizer({ example, inputs = {} }: CodeVisualizerProps) {
   const executionState = history[Math.min(currentStep, history.length - 1)];
 
   const outputs = useMemo(
-    () => history.filter((step) => Boolean(step.output)).map((step) => step.output!) ,
+    () =>
+      history
+        .filter((step) => Boolean(step.output))
+        .map((step) => step.output!),
     [history]
   );
 
@@ -233,7 +242,8 @@ export function CodeVisualizer({ example, inputs = {} }: CodeVisualizerProps) {
           <div className="space-y-1 font-mono text-sm" dir="ltr">
             {example.code.map((line) => {
               const isActive = line.lineNumber === executionState.lineNumber;
-              const hasExplanation = line.explanation && line.explanation.length > 0;
+              const hasExplanation =
+                line.explanation && line.explanation.length > 0;
 
               return (
                 <motion.div
@@ -353,7 +363,7 @@ export function CodeVisualizer({ example, inputs = {} }: CodeVisualizerProps) {
                   </motion.div>
                 ))}
               </AnimatePresence>
-              {variables.length === 0 && (
+              {executionState.variables.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-4">
                   אין משתנים עדיין
                 </p>
