@@ -66,11 +66,11 @@ export function CodeVisualizer({ example, inputs = {} }: CodeVisualizerProps) {
     for (let index = 0; index <= currentStep && index < limit; index++) {
       const previousVariables = steps[index - 1]?.variables ?? [];
       const step = example.executeStep(index, previousVariables, memoInputs);
-      steps[index] = step;
+      steps[index] = step!;
     }
 
     if (steps.length === 0) {
-      steps[0] = example.executeStep(0, [], memoInputs);
+      steps[0] = example.executeStep(0, [], memoInputs)!;
     }
 
     return steps;
