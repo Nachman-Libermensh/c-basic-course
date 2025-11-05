@@ -38,7 +38,11 @@ export const mapDefinitionToExample = (
 };
 
 export const mapDefinitionsToExamples = (
-  definitions: CustomExampleDefinition[]
+  definitions?: CustomExampleDefinition[]
 ): CodeExample[] => {
+  if (!definitions || definitions.length === 0) {
+    return [];
+  }
+
   return definitions.map(mapDefinitionToExample);
 };
