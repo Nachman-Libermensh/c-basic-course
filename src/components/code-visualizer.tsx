@@ -455,18 +455,18 @@ export function CodeVisualizer({ example, inputs = {} }: CodeVisualizerProps) {
                 <motion.div
                   key={line.lineNumber}
                   className={cn(
-                    "flex items-start gap-2 px-3 py-2 rounded-md transition-colors",
+                    "flex items-start gap-4 px-3 py-2 rounded-md transition-colors",
                     isActive &&
                       "bg-yellow-100 dark:bg-yellow-900/20 border-r-4 border-yellow-500"
                   )}
                   animate={isActive ? { scale: [1, 1.02, 1] } : {}}
                   transition={{ duration: 0.3 }}
                 >
-                  <span className="text-muted-foreground w-8 text-right select-none">
+                  <span className="text-muted-foreground w-10 text-right select-none">
                     {line.lineNumber}
                   </span>
                   {shouldShowHoverCard ? (
-                    <HoverCard>
+                    <HoverCard openDelay={18} closeDelay={100}>
                       <HoverCardTrigger asChild>
                         <code
                           className={cn(
@@ -477,7 +477,14 @@ export function CodeVisualizer({ example, inputs = {} }: CodeVisualizerProps) {
                           {line.code || " "}
                         </code>
                       </HoverCardTrigger>
-                      <HoverCardContent className="w-80 space-y-3" dir="rtl">
+                      <HoverCardContent
+                        className="w-80 space-y-3"
+                        dir="rtl"
+                        side="left"
+                        align="start"
+                        sideOffset={10}
+                        alignOffset={-20}
+                      >
                         {hasExplanation && (
                           <div className="space-y-2">
                             <h4 className="text-sm font-semibold">הסבר</h4>
