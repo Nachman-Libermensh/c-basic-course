@@ -29,6 +29,7 @@ import {
 import { cn } from "@/lib/utils";
 import { CodeExample, ExecutionStep } from "@/types/code-demo";
 import { useSimulatorStore } from "@/store/simulator";
+import { useShallow } from "zustand/react/shallow";
 
 interface CodeVisualizerProps {
   example: CodeExample;
@@ -43,14 +44,18 @@ export function CodeVisualizer({ example, inputs = {} }: CodeVisualizerProps) {
     setPlayback,
     resetPlayback,
     setSpeed,
-  } = useSimulatorStore((state) => ({
-    currentStep: state.currentStep,
-    isPlaying: state.isPlaying,
-    speed: state.speed,
-    setPlayback: state.setPlayback,
-    resetPlayback: state.resetPlayback,
-    setSpeed: state.setSpeed,
-  }));
+    advanceStep,
+  } = useSimulatorStore(
+    useShallow((state) => ({
+      currentStep: state.currentStep,
+      isPlaying: state.isPlaying,
+      speed: state.speed,
+      setPlayback: state.setPlayback,
+      resetPlayback: state.resetPlayback,
+      setSpeed: state.setSpeed,
+      advanceStep: state.advanceStep,
+    }))
+  );
 
   const memoInputs = useMemo(() => inputs ?? {}, [inputs]);
 
@@ -83,31 +88,24 @@ export function CodeVisualizer({ example, inputs = {} }: CodeVisualizerProps) {
 
   const totalSteps = example.totalSteps;
 
+  const lastStepIndex = Math.max(0, totalSteps - 1);
+
   useEffect(() => {
     if (!isPlaying) return;
 
     const interval = setInterval(() => {
-      const { currentStep: step } = useSimulatorStore.getState();
-      if (step >= totalSteps - 1) {
-        setPlayback({ isPlaying: false });
-        return;
-      }
-      setPlayback({ currentStep: step + 1 });
+      advanceStep(lastStepIndex);
     }, speed);
 
     return () => clearInterval(interval);
-  }, [isPlaying, speed, totalSteps, setPlayback]);
+  }, [advanceStep, isPlaying, lastStepIndex, speed]);
 
   const handleReset = () => {
     resetPlayback();
   };
 
   const handleNext = () => {
-    if (currentStep >= totalSteps - 1) {
-      setPlayback({ isPlaying: false });
-      return;
-    }
-    setPlayback({ currentStep: currentStep + 1 });
+    advanceStep(lastStepIndex);
   };
 
   const handlePrevious = () => {

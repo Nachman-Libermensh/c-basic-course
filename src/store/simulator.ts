@@ -11,6 +11,7 @@ interface SimulatorState {
   currentStep: number;
   isPlaying: boolean;
   speed: number;
+  isLoading: boolean;
   customDefinitions: CustomExampleDefinition[];
   setSelectedExample: (id: string | null) => void;
   setInputsForExample: (
@@ -21,10 +22,12 @@ interface SimulatorState {
   resetPlayback: () => void;
   setPlayback: (state: Partial<Pick<SimulatorState, "currentStep" | "isPlaying">>) => void;
   setSpeed: (speed: number) => void;
+  advanceStep: (maxStepIndex: number) => void;
   resetSimulation: () => void;
   addCustomDefinition: (definition: CustomExampleDefinition) => void;
   updateCustomDefinition: (definition: CustomExampleDefinition) => void;
   removeCustomDefinition: (id: string) => void;
+  setIsLoading: (isLoading: boolean) => void;
 }
 
 const noopStorage: Storage = {
@@ -46,6 +49,7 @@ export const useSimulatorStore = create<SimulatorState>()(
       currentStep: 0,
       isPlaying: false,
       speed: 1000,
+      isLoading: true,
       customDefinitions: [],
       setSelectedExample: (id) => {
         set({ selectedExampleId: id, currentStep: 0, isPlaying: false });
@@ -78,6 +82,16 @@ export const useSimulatorStore = create<SimulatorState>()(
               : prev.isPlaying,
         })),
       setSpeed: (speed) => set({ speed }),
+      advanceStep: (maxStepIndex) =>
+        set((prev) => {
+          const safeMaxIndex = Math.max(0, maxStepIndex);
+
+          if (prev.currentStep >= safeMaxIndex) {
+            return { currentStep: safeMaxIndex, isPlaying: false };
+          }
+
+          return { currentStep: prev.currentStep + 1 };
+        }),
       resetSimulation: () =>
         set({
           selectedExampleId: null,
@@ -122,6 +136,7 @@ export const useSimulatorStore = create<SimulatorState>()(
           get().clearInputsForExample(id);
         }
       },
+      setIsLoading: (isLoading) => set({ isLoading }),
     }),
     {
       name: "simulator-store",
@@ -134,6 +149,17 @@ export const useSimulatorStore = create<SimulatorState>()(
         customDefinitions: state.customDefinitions,
         speed: state.speed,
       }),
+      onRehydrateStorage: () => {
+        set({ isLoading: true });
+        return (state, error) => {
+          if (state) {
+            state.setIsLoading(false);
+          }
+          if (error) {
+            console.error("Failed to rehydrate simulator store", error);
+          }
+        };
+      },
     }
   )
 );

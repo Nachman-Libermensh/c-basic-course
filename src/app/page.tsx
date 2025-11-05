@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ExampleSelector } from "@/components/example-selector";
@@ -11,6 +11,7 @@ import { CustomExampleDialog } from "@/components/custom-example-dialog";
 import { builtInExamples, getAllExamples, getExampleById } from "@/examples";
 import { mapDefinitionsToExamples } from "@/lib/execution-helpers";
 import { useSimulatorStore } from "@/store/simulator";
+import { useShallow } from "zustand/react/shallow";
 
 export default function Home() {
   const [showInputDialog, setShowInputDialog] = useState(false);
@@ -27,18 +28,22 @@ export default function Home() {
     removeCustomDefinition,
     addCustomDefinition,
     inputsByExample,
-  } = useSimulatorStore((state) => ({
-    selectedExampleId: state.selectedExampleId,
-    setSelectedExample: state.setSelectedExample,
-    setInputsForExample: state.setInputsForExample,
-    clearInputsForExample: state.clearInputsForExample,
-    resetSimulation: state.resetSimulation,
-    resetPlayback: state.resetPlayback,
-    customDefinitions: state.customDefinitions,
-    removeCustomDefinition: state.removeCustomDefinition,
-    addCustomDefinition: state.addCustomDefinition,
-    inputsByExample: state.inputsByExample,
-  }));
+    isLoading,
+  } = useSimulatorStore(
+    useShallow((state) => ({
+      selectedExampleId: state.selectedExampleId,
+      setSelectedExample: state.setSelectedExample,
+      setInputsForExample: state.setInputsForExample,
+      clearInputsForExample: state.clearInputsForExample,
+      resetSimulation: state.resetSimulation,
+      resetPlayback: state.resetPlayback,
+      customDefinitions: state.customDefinitions,
+      removeCustomDefinition: state.removeCustomDefinition,
+      addCustomDefinition: state.addCustomDefinition,
+      inputsByExample: state.inputsByExample,
+      isLoading: state.isLoading,
+    }))
+  );
 
   const customExamples = useMemo(
     () => mapDefinitionsToExamples(customDefinitions),
@@ -114,6 +119,17 @@ export default function Home() {
       removeCustomDefinition(exampleId);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-background to-muted/20 p-4 md:p-8">
+        <div className="flex flex-col items-center gap-3" dir="rtl">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">טוען את נתוני הסימולטור...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-linear-to-br from-background to-muted/20 p-4 md:p-8">
