@@ -94,11 +94,19 @@ export function CodeVisualizer({ example, inputs = {} }: CodeVisualizerProps) {
     for (let index = 0; index <= currentStep && index < limit; index++) {
       const previousVariables = steps[index - 1]?.variables ?? [];
       const step = example.executeStep(index, previousVariables, memoInputs);
-      steps[index] = step!;
+      if (step) {
+        steps[index] = step;
+      } else {
+        // If step is undefined, we've reached the end - break the loop
+        break;
+      }
     }
 
     if (steps.length === 0) {
-      steps[0] = example.executeStep(0, [], memoInputs)!;
+      const firstStep = example.executeStep(0, [], memoInputs);
+      if (firstStep) {
+        steps[0] = firstStep;
+      }
     }
 
     return steps;
@@ -109,7 +117,9 @@ export function CodeVisualizer({ example, inputs = {} }: CodeVisualizerProps) {
   const variablesByLineNumber = useMemo(() => {
     const map = new Map<number, Variable[]>();
     history.forEach((step) => {
-      map.set(step.lineNumber, step.variables);
+      if (step && step.lineNumber !== undefined) {
+        map.set(step.lineNumber, step.variables);
+      }
     });
     return map;
   }, [history]);
@@ -136,12 +146,26 @@ export function CodeVisualizer({ example, inputs = {} }: CodeVisualizerProps) {
   const outputs = useMemo(
     () =>
       history
-        .filter((step) => Boolean(step.output))
+        .slice(0, currentStep + 1) // Only show outputs up to current step
+        .filter((step) => Boolean(step && step.output))
         .map((step) => step.output!),
-    [history]
+    [history, currentStep]
   );
 
-  const totalSteps = example.totalSteps;
+  // Calculate actual total steps by finding where executeStep returns undefined
+  const totalSteps = useMemo(() => {
+    // Try to find the last valid step
+    let lastValid = 0;
+    for (let i = 0; i < example.totalSteps; i++) {
+      const step = example.executeStep(i, [], memoInputs);
+      if (step) {
+        lastValid = i;
+      } else {
+        break;
+      }
+    }
+    return lastValid + 1; // +1 because index is 0-based
+  }, [example, memoInputs]);
 
   const lastStepIndex = Math.max(0, totalSteps - 1);
 

@@ -1,10 +1,18 @@
 import { CodeExample } from "@/types/code-demo";
 import { currencyConverterExample } from "./currency-converter";
 import { testAverageExample } from "./test-average";
+import { numberClassifierExample } from "./number-classifier";
+import { sumEvenNumbersExample } from "./sum-even-numbers";
+import { factorialExample } from "./factorial";
+import { primeNumberExample } from "./prime-number";
 
 export const builtInExamples: CodeExample[] = [
   currencyConverterExample,
+  numberClassifierExample,
+  factorialExample,
+  sumEvenNumbersExample,
   testAverageExample,
+  primeNumberExample,
 ];
 
 export const getAllExamples = (
