@@ -7,6 +7,24 @@ export const testAverageExample: CodeExample = {
     "תוכנית לחישוב ממוצע של N ציונים עם בדיקת תקינות. מדגימה: לולאות, תנאים, מערכים",
   difficulty: "intermediate",
   concepts: ["loops", "conditions", "arrays", "input", "output"],
+  source: "built-in",
+  inputs: [
+    {
+      key: "numTests",
+      label: "מספר מבחנים",
+      type: "number",
+      defaultValue: "3",
+      placeholder: "לדוגמה: 5",
+    },
+    {
+      key: "grades",
+      label: "ציונים (מופרדים בפסיקים)",
+      type: "textarea",
+      defaultValue: "85,90,78",
+      placeholder: "לדוגמה: 70,82.5,91",
+      helperText: "ניתן להזין מספרים עשרוניים",
+    },
+  ],
   code: [
     {
       lineNumber: 1,
@@ -165,7 +183,7 @@ export const testAverageExample: CodeExample = {
     },
   ],
   initialVariables: [],
-  totalSteps: 25,
+  totalSteps: 48,
   executeStep: (
     stepIndex: number,
     currentVars: Variable[],

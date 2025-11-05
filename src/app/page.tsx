@@ -1,36 +1,115 @@
 "use client";
 
-import { useState } from "react";
-import { CodeExample } from "@/types/code-demo";
-import { allExamples } from "@/examples";
+import { useMemo, useState } from "react";
+import { ArrowRight } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
 import { ExampleSelector } from "@/components/example-selector";
 import { CodeVisualizer } from "@/components/code-visualizer";
 import { InputDialog } from "@/components/input-dialog";
-import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { CustomExampleDialog } from "@/components/custom-example-dialog";
+import { builtInExamples, getAllExamples, getExampleById } from "@/examples";
+import { mapDefinitionsToExamples } from "@/lib/execution-helpers";
+import { useSimulatorStore } from "@/store/simulator";
 
 export default function Home() {
-  const [selectedExample, setSelectedExample] = useState<CodeExample | null>(
-    null
-  );
   const [showInputDialog, setShowInputDialog] = useState(false);
-  const [inputs, setInputs] = useState<Record<string, string | number>>({});
+  const [customDialogOpen, setCustomDialogOpen] = useState(false);
 
-  const handleExampleSelect = (example: CodeExample) => {
-    setSelectedExample(example);
-    setShowInputDialog(true);
+  const {
+    selectedExampleId,
+    setSelectedExample,
+    setInputsForExample,
+    clearInputsForExample,
+    resetSimulation,
+    customDefinitions,
+    removeCustomDefinition,
+    addCustomDefinition,
+    inputsByExample,
+  } = useSimulatorStore((state) => ({
+    selectedExampleId: state.selectedExampleId,
+    setSelectedExample: state.setSelectedExample,
+    setInputsForExample: state.setInputsForExample,
+    clearInputsForExample: state.clearInputsForExample,
+    resetSimulation: state.resetSimulation,
+    customDefinitions: state.customDefinitions,
+    removeCustomDefinition: state.removeCustomDefinition,
+    addCustomDefinition: state.addCustomDefinition,
+    inputsByExample: state.inputsByExample,
+  }));
+
+  const customExamples = useMemo(
+    () => mapDefinitionsToExamples(customDefinitions),
+    [customDefinitions]
+  );
+
+  const examples = useMemo(
+    () => getAllExamples(customExamples),
+    [customExamples]
+  );
+
+  const selectedExample = useMemo(() => {
+    if (!selectedExampleId) return null;
+    return (
+      getExampleById(selectedExampleId, customExamples) ||
+      builtInExamples.find((example) => example.id === selectedExampleId) ||
+      null
+    );
+  }, [selectedExampleId, customExamples]);
+
+  const currentInputs = selectedExampleId
+    ? inputsByExample[selectedExampleId] ?? {}
+    : {};
+
+  const handleExampleSelect = (exampleId: string) => {
+    const example = examples.find((item) => item.id === exampleId);
+    if (!example) return;
+
+    setSelectedExample(exampleId);
+    const hasInputs = example.inputs && example.inputs.length > 0;
+
+    if (hasInputs) {
+      setShowInputDialog(true);
+    } else {
+      setInputsForExample(exampleId, {});
+    }
   };
 
-  const handleInputSubmit = (
-    submittedInputs: Record<string, string | number>
-  ) => {
-    setInputs(submittedInputs);
+  const handleInputSubmit = (submittedInputs: Record<string, string | number>) => {
+    if (selectedExampleId) {
+      setInputsForExample(selectedExampleId, submittedInputs);
+    }
     setShowInputDialog(false);
   };
 
-  const handleBack = () => {
+  const handleCancelInput = () => {
+    if (selectedExampleId) {
+      clearInputsForExample(selectedExampleId);
+    }
+    setShowInputDialog(false);
     setSelectedExample(null);
-    setInputs({});
+  };
+
+  const handleBack = () => {
+    resetSimulation();
+    setShowInputDialog(false);
+  };
+
+  const handleCreateCustom = (definition: Parameters<typeof addCustomDefinition>[0]) => {
+    addCustomDefinition(definition);
+  };
+
+  const handleRemoveCustom = (exampleId: string) => {
+    const example = examples.find((item) => item.id === exampleId);
+    if (!example || example.source !== "custom") return;
+
+    const confirmed = window.confirm(
+      `האם למחוק את התרגיל "${example.title}"? פעולה זו אינה ניתנת לשחזור.`
+    );
+
+    if (confirmed) {
+      removeCustomDefinition(exampleId);
+    }
   };
 
   return (
@@ -38,8 +117,10 @@ export default function Home() {
       <div className="max-w-7xl mx-auto">
         {!selectedExample ? (
           <ExampleSelector
-            examples={allExamples}
-            onSelect={handleExampleSelect}
+            examples={examples}
+            onSelect={(example) => handleExampleSelect(example.id)}
+            onCreateCustom={() => setCustomDialogOpen(true)}
+            onRemoveExample={(example) => handleRemoveCustom(example.id)}
           />
         ) : (
           <div className="space-y-4">
@@ -52,7 +133,7 @@ export default function Home() {
               <ArrowRight className="h-4 w-4" />
               חזרה לבחירת תרגיל
             </Button>
-            <CodeVisualizer example={selectedExample} inputs={inputs} />
+            <CodeVisualizer example={selectedExample} inputs={currentInputs} />
           </div>
         )}
 
@@ -60,9 +141,16 @@ export default function Home() {
           <InputDialog
             example={selectedExample}
             onSubmit={handleInputSubmit}
-            onCancel={() => setShowInputDialog(false)}
+            onCancel={handleCancelInput}
+            initialValues={currentInputs}
           />
         )}
+
+        <CustomExampleDialog
+          open={customDialogOpen}
+          onOpenChange={setCustomDialogOpen}
+          onSubmit={handleCreateCustom}
+        />
       </div>
     </div>
   );

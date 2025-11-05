@@ -1,97 +1,111 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { CodeExample } from "@/types/code-demo";
+import { Textarea } from "@/components/ui/textarea";
+import { CodeExample, ExampleInputField } from "@/types/code-demo";
 
 interface InputDialogProps {
   example: CodeExample;
   onSubmit: (inputs: Record<string, string | number>) => void;
   onCancel: () => void;
+  initialValues?: Record<string, string | number>;
 }
 
-export function InputDialog({ example, onSubmit, onCancel }: InputDialogProps) {
-  const [inputs, setInputs] = useState<Record<string, string>>({});
+export function InputDialog({
+  example,
+  onSubmit,
+  onCancel,
+  initialValues = {},
+}: InputDialogProps) {
+  const fields = useMemo<ExampleInputField[]>(() => example.inputs ?? [], [
+    example.inputs,
+  ]);
+  const [inputs, setInputs] = useState<Record<string, string>>(() => {
+    const defaults: Record<string, string> = {};
+    fields.forEach((field) => {
+      const initial = initialValues[field.key];
+      if (initial !== undefined && initial !== null) {
+        defaults[field.key] = String(initial);
+      } else if (field.defaultValue !== undefined) {
+        defaults[field.key] = field.defaultValue;
+      }
+    });
+    return defaults;
+  });
 
-  const getRequiredInputs = () => {
-    switch (example.id) {
-      case "currency-converter":
-        return [
-          {
-            key: "dollars",
-            label: "סכום בדולרים",
-            type: "number",
-            defaultValue: "100",
-          },
-        ];
-      case "test-average":
-        return [
-          {
-            key: "numTests",
-            label: "מספר מבחנים",
-            type: "number",
-            defaultValue: "3",
-          },
-          {
-            key: "grades",
-            label: "ציונים (מופרדים בפסיקים)",
-            type: "text",
-            defaultValue: "85,90,78",
-          },
-        ];
-      default:
-        return [];
+  useEffect(() => {
+    if (fields.length === 0) {
+      onSubmit({});
     }
-  };
+  }, [fields.length, onSubmit]);
 
-  const requiredInputs = getRequiredInputs();
+  if (fields.length === 0) {
+    return null;
+  }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     const processedInputs: Record<string, string | number> = {};
 
-    requiredInputs.forEach((input) => {
-      const value = inputs[input.key] || input.defaultValue;
-      processedInputs[input.key] =
-        input.type === "number" ? Number(value) : value;
+    fields.forEach((field) => {
+      const value = inputs[field.key] ?? field.defaultValue ?? "";
+      if (field.type === "number") {
+        processedInputs[field.key] = Number(value);
+      } else {
+        processedInputs[field.key] = value;
+      }
     });
 
     onSubmit(processedInputs);
   };
 
-  if (requiredInputs.length === 0) {
-    // No inputs needed, start immediately
-    onSubmit({});
-    return null;
-  }
+  const renderInputField = (field: ExampleInputField) => {
+    const commonProps = {
+      id: field.key,
+      defaultValue: inputs[field.key] ?? field.defaultValue ?? "",
+      placeholder: field.placeholder ?? field.defaultValue ?? "",
+      onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+        setInputs((prev) => ({
+          ...prev,
+          [field.key]: event.target.value,
+        })),
+    };
+
+    if (field.type === "textarea") {
+      return <Textarea {...commonProps} rows={3} dir="ltr" />;
+    }
+
+    return (
+      <Input
+        {...commonProps}
+        type={field.type === "text" ? "text" : "number"}
+        dir={field.type === "text" ? "rtl" : "ltr"}
+      />
+    );
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-md p-6" dir="rtl">
-        <h2 className="text-2xl font-bold mb-2">{example.title}</h2>
-        <p className="text-sm text-muted-foreground mb-6">
-          הזן ערכי קלט לסימולציה
-        </p>
+      <Card className="w-full max-w-lg p-6" dir="rtl">
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold">{example.title}</h2>
+          <p className="text-sm text-muted-foreground">
+            הזן ערכי קלט מותאמים לתרגיל שבחרת
+          </p>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {requiredInputs.map((input) => (
-            <div key={input.key} className="space-y-2">
-              <Label htmlFor={input.key}>{input.label}</Label>
-              <Input
-                id={input.key}
-                type={input.type}
-                defaultValue={input.defaultValue}
-                onChange={(e) =>
-                  setInputs((prev) => ({
-                    ...prev,
-                    [input.key]: e.target.value,
-                  }))
-                }
-                placeholder={input.defaultValue}
-              />
+        <form onSubmit={handleSubmit} className="space-y-4 mt-6">
+          {fields.map((field) => (
+            <div key={field.key} className="space-y-2">
+              <Label htmlFor={field.key}>{field.label}</Label>
+              {renderInputField(field)}
+              {field.helperText && (
+                <p className="text-xs text-muted-foreground">{field.helperText}</p>
+              )}
             </div>
           ))}
 

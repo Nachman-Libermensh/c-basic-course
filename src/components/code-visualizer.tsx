@@ -1,8 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Pause, RotateCcw, SkipForward, Settings } from "lucide-react";
+import {
+  Play,
+  Pause,
+  RotateCcw,
+  SkipForward,
+  Settings,
+  Rewind,
+} from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,78 +19,104 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { CodeExample, Variable } from "@/types/code-demo";
+import { CodeExample, ExecutionStep } from "@/types/code-demo";
+import { useSimulatorStore } from "@/store/simulator";
 
 interface CodeVisualizerProps {
   example: CodeExample;
   inputs?: Record<string, string | number>;
 }
 
-export function CodeVisualizer({ example, inputs }: CodeVisualizerProps) {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [speed, setSpeed] = useState(1000);
-  const [variables, setVariables] = useState<Variable[]>([]);
-  const [outputs, setOutputs] = useState<string[]>([]);
+export function CodeVisualizer({ example, inputs = {} }: CodeVisualizerProps) {
+  const {
+    currentStep,
+    isPlaying,
+    speed,
+    setPlayback,
+    resetPlayback,
+    setSpeed,
+  } = useSimulatorStore((state) => ({
+    currentStep: state.currentStep,
+    isPlaying: state.isPlaying,
+    speed: state.speed,
+    setPlayback: state.setPlayback,
+    resetPlayback: state.resetPlayback,
+    setSpeed: state.setSpeed,
+  }));
 
-  const executionState = example.executeStep(currentStep, variables, inputs);
+  const memoInputs = useMemo(() => inputs ?? {}, [inputs]);
+
+  const history = useMemo(() => {
+    const steps: ExecutionStep[] = [];
+    const limit = Math.max(example.totalSteps, currentStep + 1);
+
+    for (let index = 0; index <= currentStep && index < limit; index++) {
+      const previousVariables = steps[index - 1]?.variables ?? [];
+      const step = example.executeStep(index, previousVariables, memoInputs);
+      steps[index] = step;
+    }
+
+    if (steps.length === 0) {
+      steps[0] = example.executeStep(0, [], memoInputs);
+    }
+
+    return steps;
+  }, [currentStep, example, memoInputs]);
+
+  const executionState = history[Math.min(currentStep, history.length - 1)];
+
+  const outputs = useMemo(
+    () => history.filter((step) => Boolean(step.output)).map((step) => step.output!) ,
+    [history]
+  );
+
+  const totalSteps = example.totalSteps;
 
   useEffect(() => {
-    setVariables(executionState.variables);
-    if (executionState.output) {
-      setOutputs((prev) => [...prev, executionState.output!]);
-    }
-  }, [currentStep, executionState]);
+    resetPlayback();
+  }, [example.id, memoInputs, resetPlayback]);
 
   useEffect(() => {
     if (!isPlaying) return;
 
-    const timer = setInterval(() => {
-      setCurrentStep((prev) => {
-        const totalSteps = getTotalSteps();
-        if (prev >= totalSteps - 1) {
-          setIsPlaying(false);
-          return prev;
-        }
-        return prev + 1;
-      });
+    const interval = setInterval(() => {
+      const { currentStep: step } = useSimulatorStore.getState();
+      if (step >= totalSteps - 1) {
+        setPlayback({ isPlaying: false });
+        return;
+      }
+      setPlayback({ currentStep: step + 1 });
     }, speed);
 
-    return () => clearInterval(timer);
-  }, [isPlaying, speed]);
-
-  const getTotalSteps = () => {
-    // Count actual steps by trying to execute them
-    let count = 0;
-    while (true) {
-      const step = example.executeStep(count, variables, inputs);
-      if (!step || count > 100) break; // Safety check
-      count++;
-    }
-    return count;
-  };
+    return () => clearInterval(interval);
+  }, [isPlaying, speed, totalSteps, setPlayback]);
 
   const handleReset = () => {
-    setCurrentStep(0);
-    setIsPlaying(false);
-    setVariables([]);
-    setOutputs([]);
+    resetPlayback();
   };
 
   const handleNext = () => {
-    const totalSteps = getTotalSteps();
-    if (currentStep < totalSteps - 1) {
-      setCurrentStep((prev) => prev + 1);
+    if (currentStep >= totalSteps - 1) {
+      setPlayback({ isPlaying: false });
+      return;
     }
+    setPlayback({ currentStep: currentStep + 1 });
   };
 
   const handlePrevious = () => {
-    if (currentStep > 0) {
-      setCurrentStep((prev) => prev - 1);
-      setOutputs([]);
+    if (currentStep === 0) return;
+    setPlayback({ currentStep: currentStep - 1 });
+  };
+
+  const handleTogglePlay = () => {
+    if (currentStep >= totalSteps - 1 && !isPlaying) {
+      resetPlayback();
+      setPlayback({ isPlaying: true });
+      return;
     }
+    setPlayback({ isPlaying: !isPlaying });
   };
 
   const getCategoryColor = (category?: string) => {
@@ -134,12 +168,12 @@ export function CodeVisualizer({ example, inputs }: CodeVisualizerProps) {
 
       {/* Controls */}
       <Card className="p-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex gap-2">
             <Button
               size="sm"
               variant={isPlaying ? "default" : "outline"}
-              onClick={() => setIsPlaying(!isPlaying)}
+              onClick={handleTogglePlay}
             >
               {isPlaying ? (
                 <Pause className="h-4 w-4" />
@@ -153,20 +187,45 @@ export function CodeVisualizer({ example, inputs }: CodeVisualizerProps) {
               onClick={handlePrevious}
               disabled={currentStep === 0}
             >
-              ←
+              <Rewind className="h-4 w-4" />
             </Button>
-            <Button size="sm" variant="outline" onClick={handleNext}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleNext}
+              disabled={currentStep >= totalSteps - 1}
+            >
               <SkipForward className="h-4 w-4" />
             </Button>
             <Button size="sm" variant="outline" onClick={handleReset}>
               <RotateCcw className="h-4 w-4" />
             </Button>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              שלב {currentStep + 1}
-            </span>
-            <Settings className="h-4 w-4 text-muted-foreground" />
+          <div className="flex items-center gap-3">
+            <div className="flex flex-col">
+              <span className="text-sm font-medium">מהירות</span>
+              <Select
+                value={String(speed)}
+                onValueChange={(value) => setSpeed(Number(value))}
+              >
+                <SelectTrigger className="h-9 w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1500">איטי</SelectItem>
+                  <SelectItem value="1000">רגיל</SelectItem>
+                  <SelectItem value="600">מהיר</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col items-end text-sm text-muted-foreground">
+              <span>
+                שלב {currentStep + 1} מתוך {totalSteps}
+              </span>
+              <span className="flex items-center gap-1">
+                <Settings className="h-4 w-4" /> בקרת ריצה
+              </span>
+            </div>
           </div>
         </div>
       </Card>
@@ -178,8 +237,7 @@ export function CodeVisualizer({ example, inputs }: CodeVisualizerProps) {
           <div className="space-y-1 font-mono text-sm" dir="ltr">
             {example.code.map((line) => {
               const isActive = line.lineNumber === executionState.lineNumber;
-              const hasExplanation =
-                line.explanation && line.explanation.length > 0;
+              const hasExplanation = line.explanation && line.explanation.length > 0;
 
               return (
                 <motion.div
@@ -237,7 +295,7 @@ export function CodeVisualizer({ example, inputs }: CodeVisualizerProps) {
             <h3 className="text-lg font-semibold mb-4">משתנים</h3>
             <div className="space-y-2">
               <AnimatePresence mode="popLayout">
-                {variables.map((variable) => (
+                {executionState.variables.map((variable) => (
                   <motion.div
                     key={variable.name}
                     initial={{ opacity: 0, x: -20 }}
@@ -333,7 +391,7 @@ export function CodeVisualizer({ example, inputs }: CodeVisualizerProps) {
           <Card className="p-4 bg-primary/5">
             <h3 className="text-sm font-semibold mb-2">מה קורה עכשיו?</h3>
             <motion.p
-              key={currentStep}
+              key={`${executionState.lineNumber}-${currentStep}`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="text-sm"

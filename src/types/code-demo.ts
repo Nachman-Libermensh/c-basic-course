@@ -1,6 +1,12 @@
 // Types for the code demonstration system
 
-export type VariableType = "int" | "float" | "double" | "char" | "string";
+export type VariableType =
+  | "int"
+  | "float"
+  | "double"
+  | "char"
+  | "string"
+  | "bool";
 
 export interface Variable {
   name: string;
@@ -30,6 +36,17 @@ export interface CodeLine {
     | "output";
 }
 
+export type ExampleInputType = "number" | "text" | "textarea";
+
+export interface ExampleInputField {
+  key: string;
+  label: string;
+  type: ExampleInputType;
+  defaultValue?: string;
+  placeholder?: string;
+  helperText?: string;
+}
+
 export interface CodeExample {
   id: string;
   title: string;
@@ -38,11 +55,19 @@ export interface CodeExample {
   concepts: string[]; // e.g., ['variables', 'input', 'output', 'arithmetic']
   code: CodeLine[];
   initialVariables?: Variable[];
-  executeStep: (
-    stepIndex: number,
-    currentVars: Variable[],
-    inputs?: Record<string, string | number>
-  ) => ExecutionStep;
+  inputs?: ExampleInputField[];
+  source?: "built-in" | "custom";
+  executeStep:
+    | ((
+        stepIndex: number,
+        currentVars: Variable[],
+        inputs?: Record<string, string | number>
+      ) => ExecutionStep)
+    | ((
+        stepIndex: number,
+        currentVars: Variable[],
+        inputs?: Record<string, string | number>
+      ) => ExecutionStep | undefined);
   totalSteps: number;
 }
 

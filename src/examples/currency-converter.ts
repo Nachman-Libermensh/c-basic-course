@@ -1,5 +1,7 @@
 import { CodeExample, ExecutionStep, Variable } from "@/types/code-demo";
 
+const TOTAL_STEPS = 10;
+
 export const currencyConverterExample: CodeExample = {
   id: "currency-converter",
   title: "המרת מטבעות - דולר לשקל",
@@ -7,6 +9,16 @@ export const currencyConverterExample: CodeExample = {
     "תוכנית פשוטה להמרת דולרים לשקלים. מדגימה: הצהרת משתנים, קלט, חישוב אריתמטי ופלט",
   difficulty: "basic",
   concepts: ["variables", "input", "arithmetic", "output"],
+  source: "built-in",
+  inputs: [
+    {
+      key: "dollars",
+      label: "סכום בדולרים",
+      type: "number",
+      defaultValue: "100",
+      placeholder: "לדוגמה: 250",
+    },
+  ],
   code: [
     {
       lineNumber: 1,
@@ -93,27 +105,27 @@ export const currencyConverterExample: CodeExample = {
     },
   ],
   initialVariables: [],
-  totalSteps: 11,
+  totalSteps: TOTAL_STEPS,
   executeStep: (
     stepIndex: number,
     currentVars: Variable[],
     inputs?: Record<string, string | number>
   ): ExecutionStep => {
+    const dollars = Number(inputs?.dollars ?? 100);
+    const shekelsValue = Number((dollars * 3.7).toFixed(2));
+
     const steps: ExecutionStep[] = [
-      // Step 0: Start
       {
         lineNumber: 3,
         description: "התוכנית מתחילה לרוץ",
         variables: [],
       },
-      // Step 1: Declare dollars
       {
         lineNumber: 4,
         description: "הצהרה על משתנה dollars - מקצה מקום בזיכרון למספר עשרוני",
         variables: [{ name: "dollars", type: "float", value: null }],
         highlight: "dollars",
       },
-      // Step 2: Initialize exchangeRate
       {
         lineNumber: 5,
         description: "יצירת משתנה exchangeRate עם ערך התחלתי 3.7",
@@ -123,7 +135,6 @@ export const currencyConverterExample: CodeExample = {
         ],
         highlight: "exchangeRate",
       },
-      // Step 3: Declare shekels
       {
         lineNumber: 6,
         description: "הצהרה על משתנה shekels לאחסון התוצאה",
@@ -134,7 +145,6 @@ export const currencyConverterExample: CodeExample = {
         ],
         highlight: "shekels",
       },
-      // Step 4: Print prompt
       {
         lineNumber: 8,
         description: 'הצגת הודעה למשתמש: "Enter amount in dollars: "',
@@ -145,80 +155,57 @@ export const currencyConverterExample: CodeExample = {
         ],
         output: "Enter amount in dollars: ",
       },
-      // Step 5: Get input
       {
         lineNumber: 9,
         description: "קליטת ערך מהמשתמש ושמירה במשתנה dollars",
         variables: [
-          { name: "dollars", type: "float", value: inputs?.dollars ?? 100 },
+          { name: "dollars", type: "float", value: dollars },
           { name: "exchangeRate", type: "float", value: 3.7 },
           { name: "shekels", type: "float", value: null },
         ],
         highlight: "dollars",
-        output: `${inputs?.dollars ?? 100}`,
+        output: `${dollars}`,
       },
-      // Step 6: Calculate
       {
         lineNumber: 11,
         description: "ביצוע חישוב: הכפלת הדולרים בשער החליפין",
         variables: [
-          { name: "dollars", type: "float", value: inputs?.dollars ?? 100 },
+          { name: "dollars", type: "float", value: dollars },
           { name: "exchangeRate", type: "float", value: 3.7 },
-          {
-            name: "shekels",
-            type: "float",
-            value: (((inputs?.dollars as number) ?? 100) * 3.7).toFixed(2),
-          },
+          { name: "shekels", type: "float", value: shekelsValue },
         ],
         highlight: "shekels",
       },
-      // Step 7: Print result
       {
         lineNumber: 13,
         description: "הצגת התוצאה: סכום הדולרים וההמרה לשקלים",
         variables: [
-          { name: "dollars", type: "float", value: inputs?.dollars ?? 100 },
+          { name: "dollars", type: "float", value: dollars },
           { name: "exchangeRate", type: "float", value: 3.7 },
-          {
-            name: "shekels",
-            type: "float",
-            value: (((inputs?.dollars as number) ?? 100) * 3.7).toFixed(2),
-          },
+          { name: "shekels", type: "float", value: shekelsValue },
         ],
-        output: `${Number(inputs?.dollars ?? 100).toFixed(2)} dollars = ${(
-          ((inputs?.dollars as number) ?? 100) * 3.7
-        ).toFixed(2)} shekels`,
+        output: `${dollars.toFixed(2)} dollars = ${shekelsValue.toFixed(2)} shekels`,
       },
-      // Step 8: Return
       {
         lineNumber: 14,
         description: "החזרת 0 - סיום מוצלח של התוכנית",
         variables: [
-          { name: "dollars", type: "float", value: inputs?.dollars ?? 100 },
+          { name: "dollars", type: "float", value: dollars },
           { name: "exchangeRate", type: "float", value: 3.7 },
-          {
-            name: "shekels",
-            type: "float",
-            value: (((inputs?.dollars as number) ?? 100) * 3.7).toFixed(2),
-          },
+          { name: "shekels", type: "float", value: shekelsValue },
         ],
       },
-      // Step 9: End
       {
         lineNumber: 15,
         description: "סיום התוכנית",
         variables: [
-          { name: "dollars", type: "float", value: inputs?.dollars ?? 100 },
+          { name: "dollars", type: "float", value: dollars },
           { name: "exchangeRate", type: "float", value: 3.7 },
-          {
-            name: "shekels",
-            type: "float",
-            value: (((inputs?.dollars as number) ?? 100) * 3.7).toFixed(2),
-          },
+          { name: "shekels", type: "float", value: shekelsValue },
         ],
       },
     ];
 
-    return steps[stepIndex] || steps[0];
+    return steps[stepIndex] || steps[steps.length - 1];
   },
 };
