@@ -11,7 +11,6 @@ import { CustomExampleDialog } from "@/components/custom-example-dialog";
 import { builtInExamples, getAllExamples, getExampleById } from "@/examples";
 import { mapDefinitionsToExamples } from "@/lib/execution-helpers";
 import { useSimulatorStore } from "@/store/simulator";
-import { useShallow } from "zustand/react/shallow";
 
 export const dynamic = "force-static";
 
@@ -19,33 +18,27 @@ export default function Home() {
   const [showInputDialog, setShowInputDialog] = useState(false);
   const [customDialogOpen, setCustomDialogOpen] = useState(false);
 
-  const {
-    selectedExampleId,
-    setSelectedExample,
-    setInputsForExample,
-    clearInputsForExample,
-    resetSimulation,
-    resetPlayback,
-    customDefinitions,
-    removeCustomDefinition,
-    addCustomDefinition,
-    inputsByExample,
-    isLoading,
-  } = useSimulatorStore(
-    useShallow((state) => ({
-      selectedExampleId: state.selectedExampleId,
-      setSelectedExample: state.setSelectedExample,
-      setInputsForExample: state.setInputsForExample,
-      clearInputsForExample: state.clearInputsForExample,
-      resetSimulation: state.resetSimulation,
-      resetPlayback: state.resetPlayback,
-      customDefinitions: state.customDefinitions,
-      removeCustomDefinition: state.removeCustomDefinition,
-      addCustomDefinition: state.addCustomDefinition,
-      inputsByExample: state.inputsByExample,
-      isLoading: state.isLoading,
-    }))
+  const selectedExampleId = useSimulatorStore(
+    (state) => state.selectedExampleId
   );
+  const setSelectedExample = useSimulatorStore((state) => state.setSelectedExample);
+  const setInputsForExample = useSimulatorStore(
+    (state) => state.setInputsForExample
+  );
+  const clearInputsForExample = useSimulatorStore(
+    (state) => state.clearInputsForExample
+  );
+  const resetSimulation = useSimulatorStore((state) => state.resetSimulation);
+  const resetPlayback = useSimulatorStore((state) => state.resetPlayback);
+  const customDefinitions = useSimulatorStore((state) => state.customDefinitions);
+  const removeCustomDefinition = useSimulatorStore(
+    (state) => state.removeCustomDefinition
+  );
+  const addCustomDefinition = useSimulatorStore(
+    (state) => state.addCustomDefinition
+  );
+  const inputsByExample = useSimulatorStore((state) => state.inputsByExample);
+  const isLoading = useSimulatorStore((state) => state.isLoading);
 
   const customExamples = useMemo(
     () => mapDefinitionsToExamples(customDefinitions),

@@ -98,6 +98,8 @@ const difficultyOptions: CodeExample["difficulty"][] = [
   "advanced",
 ];
 
+const NO_CATEGORY_VALUE = "none";
+
 const codeCategories: (CodeLine["category"] | undefined)[] = [
   undefined,
   "declaration",
@@ -690,12 +692,14 @@ export function CustomExampleDialog({
                       <div className="space-y-2">
                         <Label>קטגוריה</Label>
                         <Select
-                          value={line.category ?? ""}
+                          value={line.category ?? NO_CATEGORY_VALUE}
                           onValueChange={(value) =>
                             handleUpdateCodeLine(
                               index,
                               "category",
-                              value === "" ? undefined : (value as CodeLine["category"])
+                              value === NO_CATEGORY_VALUE
+                                ? undefined
+                                : (value as CodeLine["category"])
                             )
                           }
                         >
@@ -703,7 +707,7 @@ export function CustomExampleDialog({
                             <SelectValue placeholder="בחר קטגוריה" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">ללא</SelectItem>
+                            <SelectItem value={NO_CATEGORY_VALUE}>ללא</SelectItem>
                             {codeCategories
                               .filter((category): category is CodeLine["category"] => !!category)
                               .map((category) => (
