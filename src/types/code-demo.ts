@@ -15,12 +15,26 @@ export interface Variable {
   scope?: string;
 }
 
+export interface StepInputRequest {
+  key: string;
+  prompt: string;
+  label?: string;
+  helperText?: string;
+  type?: ExampleInputType;
+  defaultValue?: string;
+  applyValue?: (
+    currentInputs: Record<string, string | number>,
+    newValue: string
+  ) => Record<string, string | number>;
+}
+
 export interface ExecutionStep {
   lineNumber: number;
   description: string;
   variables: Variable[];
   output?: string;
   highlight?: string; // variable name to highlight
+  inputRequest?: StepInputRequest;
 }
 
 export interface CodeLine {

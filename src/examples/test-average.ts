@@ -284,6 +284,24 @@ export const testAverageExample: CodeExample = {
       ],
       highlight: "numTests",
       output: `${numTests}`,
+      inputRequest: {
+        key: "numTests",
+        prompt: "כמה מבחנים נבדקו?",
+        label: "מספר מבחנים",
+        helperText: "הזינו ערך בין 1 ל-100",
+        type: "number",
+        defaultValue: String(numTests),
+        applyValue: (currentInputs, newValue) => {
+          const parsed = Number(newValue);
+          const safeValue = Number.isFinite(parsed)
+            ? Math.max(1, Math.min(100, parsed))
+            : 1;
+          return {
+            ...currentInputs,
+            numTests: safeValue,
+          };
+        },
+      },
     });
 
     // Step 8: Check condition
@@ -388,6 +406,53 @@ export const testAverageExample: CodeExample = {
         ],
         output: `${currentGrade}`,
         highlight: "grades",
+        inputRequest: {
+          key: `grade-${iteration + 1}`,
+          prompt: `הזינו את ציון מבחן מספר ${iteration + 1}`,
+          label: `ציון ${iteration + 1}`,
+          helperText: "יש להזין מספר בין 0 ל-100",
+          type: "number",
+          defaultValue: String(currentGrade),
+          applyValue: (currentInputs, newValue) => {
+            const fallbackParts = Array.from(
+              { length: Math.max(numTests, grades.length, iteration + 1) },
+              (_, index) => String(grades[index] ?? 0)
+            );
+            const rawParts =
+              typeof currentInputs.grades === "string"
+                ? currentInputs.grades.split(",").map((part) => part.trim())
+                : fallbackParts;
+            const normalizedParts = [...fallbackParts];
+            rawParts.forEach((part, index) => {
+              if (part && index < normalizedParts.length) {
+                normalizedParts[index] = part;
+              } else if (part) {
+                normalizedParts.push(part);
+              }
+            });
+
+            const parsedValue = Number(newValue);
+            const safeValue = Number.isFinite(parsedValue)
+              ? Math.max(0, Math.min(100, parsedValue))
+              : currentGrade;
+
+            if (iteration < normalizedParts.length) {
+              normalizedParts[iteration] = String(safeValue);
+            } else {
+              while (normalizedParts.length <= iteration) {
+                normalizedParts.push("0");
+              }
+              normalizedParts[iteration] = String(safeValue);
+            }
+
+            return {
+              ...currentInputs,
+              grades: normalizedParts
+                .slice(0, Math.max(numTests, iteration + 1))
+                .join(","),
+            };
+          },
+        },
       });
 
       currentSum += currentGrade;

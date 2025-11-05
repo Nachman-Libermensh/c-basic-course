@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Play,
@@ -27,9 +27,26 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { CodeExample, ExecutionStep } from "@/types/code-demo";
+import {
+  CodeExample,
+  ExecutionStep,
+  StepInputRequest,
+} from "@/types/code-demo";
 import { useSimulatorStore } from "@/store/simulator";
 import { useShallow } from "zustand/react/shallow";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 interface CodeVisualizerProps {
   example: CodeExample;
@@ -45,6 +62,7 @@ export function CodeVisualizer({ example, inputs = {} }: CodeVisualizerProps) {
     resetPlayback,
     setSpeed,
     advanceStep,
+    setInputsForExample,
   } = useSimulatorStore(
     useShallow((state) => ({
       currentStep: state.currentStep,
@@ -54,10 +72,20 @@ export function CodeVisualizer({ example, inputs = {} }: CodeVisualizerProps) {
       resetPlayback: state.resetPlayback,
       setSpeed: state.setSpeed,
       advanceStep: state.advanceStep,
+      setInputsForExample: state.setInputsForExample,
     }))
   );
 
   const memoInputs = useMemo(() => inputs ?? {}, [inputs]);
+
+  const [activeInputPrompt, setActiveInputPrompt] = useState<{
+    stepIndex: number;
+    request: StepInputRequest;
+    value: string;
+    wasPlaying: boolean;
+  } | null>(null);
+  const handledInputSteps = useRef<Set<number>>(new Set());
+  const lastStepRef = useRef<number>(0);
 
   const history = useMemo(() => {
     const steps: ExecutionStep[] = [];
@@ -91,6 +119,61 @@ export function CodeVisualizer({ example, inputs = {} }: CodeVisualizerProps) {
   const lastStepIndex = Math.max(0, totalSteps - 1);
 
   useEffect(() => {
+    if (currentStep < lastStepRef.current) {
+      if (currentStep === 0) {
+        handledInputSteps.current = new Set();
+      } else {
+        handledInputSteps.current = new Set(
+          Array.from(handledInputSteps.current).filter(
+            (stepIndex) => stepIndex <= currentStep
+          )
+        );
+      }
+    }
+    lastStepRef.current = currentStep;
+  }, [currentStep]);
+
+  useEffect(() => {
+    const request = executionState?.inputRequest;
+    if (!request) return;
+
+    if (activeInputPrompt && activeInputPrompt.stepIndex === currentStep) {
+      return;
+    }
+
+    if (handledInputSteps.current.has(currentStep)) {
+      return;
+    }
+
+    const defaultValue =
+      request.defaultValue ??
+      (request.key in memoInputs ? String(memoInputs[request.key]) : "");
+
+    const nextPrompt = {
+      stepIndex: currentStep,
+      request,
+      value: defaultValue,
+      wasPlaying: isPlaying,
+    };
+
+    const applyPrompt = () => setActiveInputPrompt(nextPrompt);
+    if (typeof queueMicrotask === "function") {
+      queueMicrotask(applyPrompt);
+    } else {
+      setTimeout(applyPrompt, 0);
+    }
+
+    setPlayback({ isPlaying: false });
+  }, [
+    executionState?.inputRequest,
+    currentStep,
+    memoInputs,
+    isPlaying,
+    setPlayback,
+    activeInputPrompt,
+  ]);
+
+  useEffect(() => {
     if (!isPlaying) return;
 
     const interval = setInterval(() => {
@@ -121,6 +204,65 @@ export function CodeVisualizer({ example, inputs = {} }: CodeVisualizerProps) {
     }
     setPlayback({ isPlaying: !isPlaying });
   };
+
+  const handleInputValueChange = (value: string) => {
+    setActiveInputPrompt((prev) => (prev ? { ...prev, value } : prev));
+  };
+
+  const applyInputValue = (
+    request: StepInputRequest,
+    value: string
+  ): Record<string, string | number> => {
+    if (typeof request.applyValue === "function") {
+      return request.applyValue({ ...memoInputs }, value);
+    }
+
+    if (request.type === "number") {
+      const parsed = Number(value);
+      return {
+        ...memoInputs,
+        [request.key]: Number.isFinite(parsed) ? parsed : 0,
+      };
+    }
+
+    return {
+      ...memoInputs,
+      [request.key]: value,
+    };
+  };
+
+  const handleConfirmInput = () => {
+    if (!activeInputPrompt) return;
+
+    const { request, value, wasPlaying, stepIndex } = activeInputPrompt;
+    const updatedInputs = applyInputValue(request, value);
+
+    if (typeof setInputsForExample === "function") {
+      setInputsForExample(example.id, updatedInputs);
+    }
+
+    handledInputSteps.current.add(stepIndex);
+    setActiveInputPrompt(null);
+
+    if (wasPlaying) {
+      setPlayback({ isPlaying: true });
+    }
+  };
+
+  const handleCancelInput = () => {
+    if (!activeInputPrompt) return;
+
+    const { wasPlaying, stepIndex } = activeInputPrompt;
+
+    handledInputSteps.current.add(stepIndex);
+    setActiveInputPrompt(null);
+
+    if (wasPlaying) {
+      setPlayback({ isPlaying: true });
+    }
+  };
+
+  const currentInputPrompt = activeInputPrompt?.request;
 
   const getCategoryColor = (category?: string) => {
     switch (category) {
@@ -403,8 +545,66 @@ export function CodeVisualizer({ example, inputs = {} }: CodeVisualizerProps) {
               {executionState.description}
             </motion.p>
           </Card>
-        </div>
       </div>
+    </div>
+
+      <AlertDialog
+        open={Boolean(activeInputPrompt)}
+        onOpenChange={(open) => {
+          if (!open && activeInputPrompt) {
+            handleCancelInput();
+          }
+        }}
+      >
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>נדרש קלט משתמש</AlertDialogTitle>
+            <AlertDialogDescription>
+              {currentInputPrompt?.prompt ?? ""}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="space-y-3">
+            {currentInputPrompt?.label && (
+              <Label htmlFor="runtime-input">{currentInputPrompt.label}</Label>
+            )}
+            {currentInputPrompt?.type === "textarea" ? (
+              <Textarea
+                id="runtime-input"
+                value={activeInputPrompt?.value ?? ""}
+                onChange={(event) => handleInputValueChange(event.target.value)}
+                dir="ltr"
+                rows={3}
+              />
+            ) : (
+              <Input
+                id="runtime-input"
+                type={currentInputPrompt?.type === "number" ? "number" : "text"}
+                dir={currentInputPrompt?.type === "number" ? "ltr" : "rtl"}
+                value={activeInputPrompt?.value ?? ""}
+                onChange={(event) => handleInputValueChange(event.target.value)}
+                autoFocus
+              />
+            )}
+            {currentInputPrompt?.helperText && (
+              <p className="text-xs text-muted-foreground">
+                {currentInputPrompt.helperText}
+              </p>
+            )}
+          </div>
+
+          <AlertDialogFooter className="flex gap-2 justify-end">
+            <AlertDialogCancel asChild>
+              <Button variant="outline" onClick={handleCancelInput}>
+                ביטול
+              </Button>
+            </AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Button onClick={handleConfirmInput}>שמירת קלט</Button>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

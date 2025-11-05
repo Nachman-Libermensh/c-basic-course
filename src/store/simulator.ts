@@ -43,19 +43,9 @@ const noopStorage: Storage = {
   },
 };
 
-let setStateRef:
-  | ((
-      partial:
-        | Partial<SimulatorState>
-        | ((state: SimulatorState) => Partial<SimulatorState>)
-    ) => void)
-  | null = null;
-
 export const useSimulatorStore = create<SimulatorState>()(
   persist(
     (set, get) => {
-      setStateRef = set;
-
       const actions = {
         setSelectedExample: (id: string | null) => {
           set({ selectedExampleId: id, currentStep: 0, isPlaying: false });

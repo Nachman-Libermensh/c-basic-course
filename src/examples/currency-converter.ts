@@ -165,6 +165,21 @@ export const currencyConverterExample: CodeExample = {
         ],
         highlight: "dollars",
         output: `${dollars}`,
+        inputRequest: {
+          key: "dollars",
+          prompt: "הזן סכום בדולרים",
+          label: "סכום בדולרים",
+          type: "number",
+          defaultValue: String(dollars),
+          helperText: "ניתן להזין מספרים עשרוניים",
+          applyValue: (currentInputs, newValue) => {
+            const parsed = Number(newValue);
+            return {
+              ...currentInputs,
+              dollars: Number.isFinite(parsed) ? parsed : 0,
+            };
+          },
+        },
       },
       {
         lineNumber: 11,
