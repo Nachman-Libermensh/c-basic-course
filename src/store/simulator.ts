@@ -20,7 +20,9 @@ interface SimulatorState {
   ) => void;
   clearInputsForExample: (id: string) => void;
   resetPlayback: () => void;
-  setPlayback: (state: Partial<Pick<SimulatorState, "currentStep" | "isPlaying">>) => void;
+  setPlayback: (
+    state: Partial<Pick<SimulatorState, "currentStep" | "isPlaying">>
+  ) => void;
   setSpeed: (speed: number) => void;
   advanceStep: (maxStepIndex: number) => void;
   resetSimulation: () => void;
@@ -58,7 +60,10 @@ export const useSimulatorStore = create<SimulatorState>()(
         setSelectedExample: (id: string | null) => {
           set({ selectedExampleId: id, currentStep: 0, isPlaying: false });
         },
-        setInputsForExample: (id: string, inputs: Record<string, string | number>) => {
+        setInputsForExample: (
+          id: string,
+          inputs: Record<string, string | number>
+        ) => {
           set((state) => ({
             inputsByExample: {
               ...state.inputsByExample,
@@ -74,7 +79,9 @@ export const useSimulatorStore = create<SimulatorState>()(
           });
         },
         resetPlayback: () => set({ currentStep: 0, isPlaying: false }),
-        setPlayback: (state: Partial<Pick<SimulatorState, "currentStep" | "isPlaying">>) =>
+        setPlayback: (
+          state: Partial<Pick<SimulatorState, "currentStep" | "isPlaying">>
+        ) =>
           set((prev) => ({
             currentStep:
               typeof state.currentStep === "number"
@@ -170,7 +177,9 @@ export const useSimulatorStore = create<SimulatorState>()(
   )
 );
 
-export const getInputsForExample = (id: string): Record<string, string | number> => {
+export const getInputsForExample = (
+  id: string
+): Record<string, string | number> => {
   const store = useSimulatorStore.getState();
   return store.inputsByExample[id] ?? {};
 };
