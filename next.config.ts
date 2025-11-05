@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
   // הגדרות לGitHub Pages
   // אם הריפו נמצא ב-https://github.com/username/repo-name
   // פתחו את ההערה למשתנה basePath:
-  basePath: "/docker-traefik",
+  basePath: "/c-basic-course",
   images: {
     unoptimized: true, // נדרש לstatic export
   },
