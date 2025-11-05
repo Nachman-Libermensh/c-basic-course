@@ -21,9 +21,10 @@ export function InputDialog({
   onCancel,
   initialValues = {},
 }: InputDialogProps) {
-  const fields = useMemo<ExampleInputField[]>(() => example.inputs ?? [], [
-    example.inputs,
-  ]);
+  const fields = useMemo<ExampleInputField[]>(
+    () => example.inputs ?? [],
+    [example.inputs]
+  );
   const [inputs, setInputs] = useState<Record<string, string>>(() => {
     const defaults: Record<string, string> = {};
     fields.forEach((field) => {
@@ -68,7 +69,9 @@ export function InputDialog({
       id: field.key,
       defaultValue: inputs[field.key] ?? field.defaultValue ?? "",
       placeholder: field.placeholder ?? field.defaultValue ?? "",
-      onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      onChange: (
+        event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+      ) =>
         setInputs((prev) => ({
           ...prev,
           [field.key]: event.target.value,
@@ -76,7 +79,14 @@ export function InputDialog({
     };
 
     if (field.type === "textarea") {
-      return <Textarea {...commonProps} rows={3} dir="ltr" />;
+      return (
+        <Textarea
+          {...commonProps}
+          rows={3}
+          dir="ltr"
+          className="resize-none font-mono"
+        />
+      );
     }
 
     return (
@@ -84,36 +94,62 @@ export function InputDialog({
         {...commonProps}
         type={field.type === "text" ? "text" : "number"}
         dir={field.type === "text" ? "rtl" : "ltr"}
+        className="h-11"
       />
     );
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-lg p-6" dir="rtl">
-        <div className="space-y-2">
-          <h2 className="text-2xl font-bold">{example.title}</h2>
-          <p className="text-sm text-muted-foreground">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+      <Card
+        className="w-full max-w-lg p-8 shadow-2xl border-2 animate-in zoom-in-95 duration-300"
+        dir="rtl"
+      >
+        <div className="space-y-3 mb-8">
+          <h2 className="text-3xl font-bold flex items-center gap-3">
+            <span className="text-primary">🎯</span>
+            {example.title}
+          </h2>
+          <p className="text-base text-muted-foreground leading-relaxed">
             הזן ערכי קלט מותאמים לתרגיל שבחרת
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 mt-6">
-          {fields.map((field) => (
-            <div key={field.key} className="space-y-2">
-              <Label htmlFor={field.key}>{field.label}</Label>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {fields.map((field, index) => (
+            <div
+              key={field.key}
+              className="space-y-2.5 p-4 rounded-lg bg-muted/30 border border-border/50"
+              style={{ animationDelay: `${index * 50}ms` }}
+            >
+              <Label htmlFor={field.key} className="text-base font-semibold">
+                {field.label}
+              </Label>
               {renderInputField(field)}
               {field.helperText && (
-                <p className="text-xs text-muted-foreground">{field.helperText}</p>
+                <p className="text-sm text-muted-foreground leading-relaxed flex items-start gap-2">
+                  <span className="text-primary shrink-0">ℹ️</span>
+                  <span>{field.helperText}</span>
+                </p>
               )}
             </div>
           ))}
 
-          <div className="flex gap-2 pt-4">
-            <Button type="submit" className="flex-1">
-              התחל סימולציה
+          <div className="flex gap-3 pt-6 border-t">
+            <Button
+              type="submit"
+              className="flex-1 h-12 text-base font-medium shadow-sm hover:shadow-lg transition-all"
+            >
+              <span className="flex items-center justify-center gap-2">
+                ▶️ התחל סימולציה
+              </span>
             </Button>
-            <Button type="button" variant="outline" onClick={onCancel}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              className="h-12 px-8 font-medium hover:bg-muted transition-colors"
+            >
               ביטול
             </Button>
           </div>

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -90,7 +91,11 @@ const variableTypeLabels: Record<VariableType, string> = {
   bool: "ערך בוליאני (bool)",
 };
 
-const snippetPresets: { label: string; description: string; snippet: string }[] = [
+const snippetPresets: {
+  label: string;
+  description: string;
+  snippet: string;
+}[] = [
   {
     label: "printf",
     description: "הדפסת הודעה למסך",
@@ -223,7 +228,9 @@ const createInputRequestFromLine = (
     key: variableName,
     prompt: `הזינו ערך עבור ${variableName}`,
     label: `ערך עבור ${variableName}`,
-    helperText: variable ? `טיפוס הנתונים: ${variableTypeLabels[variable.type]}` : undefined,
+    helperText: variable
+      ? `טיפוס הנתונים: ${variableTypeLabels[variable.type]}`
+      : undefined,
     type: requestType,
     defaultValue: variable?.initialValue ?? "",
     applyValue: (currentInputs, newValue) => {
@@ -254,7 +261,10 @@ const buildInputFields = (variables: VariableForm[]): ExampleInputField[] =>
       helperText: `טיפוס המשתנה: ${variableTypeLabels[variable.type]}`,
     }));
 
-const generateCodeLines = (variables: VariableForm[], codeBody: string): CodeLine[] => {
+const generateCodeLines = (
+  variables: VariableForm[],
+  codeBody: string
+): CodeLine[] => {
   const lines: CodeLine[] = [];
   let lineNumber = 1;
 
@@ -355,7 +365,12 @@ const generateSteps = (
   codeLines.forEach((line) => {
     const trimmed = line.code.trim();
     if (!trimmed) return;
-    if (trimmed === "int main() {" || trimmed === "return 0;" || trimmed === "}") return;
+    if (
+      trimmed === "int main() {" ||
+      trimmed === "return 0;" ||
+      trimmed === "}"
+    )
+      return;
     if (trimmed.startsWith("#include")) return;
 
     const description = describeLine(trimmed);
@@ -375,7 +390,7 @@ const generateSteps = (
 
   const lastLine = codeLines[codeLines.length - 1];
   steps.push({
-    lineNumber: lastLine?.lineNumber ?? (mainLine?.lineNumber ?? 1),
+    lineNumber: lastLine?.lineNumber ?? mainLine?.lineNumber ?? 1,
     description: "סיום התוכנית",
     variables: cloneVariables(state),
   });
@@ -398,9 +413,12 @@ export function CustomExampleDialog({
 }: CustomExampleDialogProps) {
   const [title, setTitle] = useState("תרגיל חדש");
   const [description, setDescription] = useState("");
-  const [difficulty, setDifficulty] = useState<CustomExampleDefinition["difficulty"]>("basic");
+  const [difficulty, setDifficulty] =
+    useState<CustomExampleDefinition["difficulty"]>("basic");
   const [conceptInput, setConceptInput] = useState("משתנים,פלט");
-  const [variables, setVariables] = useState<VariableForm[]>([createVariableForm()]);
+  const [variables, setVariables] = useState<VariableForm[]>([
+    createVariableForm(),
+  ]);
   const [codeBody, setCodeBody] = useState<string>('printf("Hello World\\n");');
   const [error, setError] = useState<string | null>(null);
 
@@ -479,7 +497,9 @@ export function CustomExampleDialog({
       return;
     }
 
-    const hasVariableNames = variables.every((variable) => variable.name.trim());
+    const hasVariableNames = variables.every((variable) =>
+      variable.name.trim()
+    );
     if (!hasVariableNames) {
       setError("כל המשתנים חייבים שם ייחודי");
       return;
@@ -522,49 +542,73 @@ export function CustomExampleDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-5xl" dir="rtl">
-        <DialogHeader>
-          <DialogTitle className="text-2xl">יצירת תרגיל חדש בפשטות</DialogTitle>
-          <p className="text-sm text-muted-foreground">
+      <DialogContent
+        className="min-w-6xl max-h-[90vh] flex flex-col overflow-hidden"
+        dir="rtl"
+      >
+        <DialogHeader className="space-y-3 pb-6 border-b shrink-0">
+          <DialogTitle className="text-3xl font-bold flex items-center gap-3">
+            <span className="text-primary">✨</span>
+            יצירת תרגיל חדש בפשטות
+          </DialogTitle>
+          <DialogDescription className="text-base text-right text-muted-foreground leading-relaxed">
             הגדירו את פרטי התרגיל, המשתנים והקוד. מעטפת ה-main וה-return מתווספת
             אוטומטית.
-          </p>
+          </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[65vh] pr-2">
-          <div className="space-y-6 py-1">
-            <Card className="p-4 space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold">פרטי התרגיל</h3>
-                <p className="text-sm text-muted-foreground">
+        <ScrollArea dir="rtl" className="flex-1 pr-4 overflow-y-auto">
+          <div className="space-y-6 py-2">
+            <Card className="p-6 space-y-5 border-2 bg-card/50">
+              <div className="space-y-2">
+                <h3 className="text-xl font-semibold flex items-center gap-2">
+                  <span className="text-2xl">📝</span>
+                  פרטי התרגיל
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
                   תארו בקצרה את התרגיל והגדירו את רמת הקושי.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="custom-title">שם התרגיל</Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2.5">
+                  <Label
+                    htmlFor="custom-title"
+                    className="text-base font-medium"
+                  >
+                    שם התרגיל
+                  </Label>
                   <Input
                     id="custom-title"
                     value={title}
                     onChange={(event) => setTitle(event.target.value)}
                     placeholder="לדוגמה: סכום שני מספרים"
+                    className="h-11"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="custom-difficulty">רמת קושי</Label>
+                <div className="space-y-2.5">
+                  <Label
+                    htmlFor="custom-difficulty"
+                    className="text-base font-medium"
+                  >
+                    רמת קושי
+                  </Label>
                   <Select
                     value={difficulty}
-                    onValueChange={(value: CustomExampleDefinition["difficulty"]) =>
-                      setDifficulty(value)
-                    }
+                    onValueChange={(
+                      value: CustomExampleDefinition["difficulty"]
+                    ) => setDifficulty(value)}
                   >
-                    <SelectTrigger id="custom-difficulty">
+                    <SelectTrigger id="custom-difficulty" className="h-11">
                       <SelectValue placeholder="בחרו רמת קושי" />
                     </SelectTrigger>
                     <SelectContent>
                       {difficultyOptions.map((option) => (
-                        <SelectItem key={option} value={option}>
+                        <SelectItem
+                          key={option}
+                          value={option}
+                          className="text-base"
+                        >
                           {difficultyText[option]}
                         </SelectItem>
                       ))}
@@ -573,183 +617,278 @@ export function CustomExampleDialog({
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="custom-description">תיאור קצר</Label>
+              <div className="space-y-2.5 md:col-span-2">
+                <Label
+                  htmlFor="custom-description"
+                  className="text-base font-medium"
+                >
+                  תיאור קצר
+                </Label>
                 <Textarea
                   id="custom-description"
                   value={description}
                   onChange={(event) => setDescription(event.target.value)}
-                  rows={3}
+                  rows={2}
                   placeholder="ספרו מה לומדים בתרגיל"
+                  className="resize-none"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="custom-concepts">מושגים מרכזיים (מופרדים בפסיקים)</Label>
+              <div className="space-y-2.5 md:col-span-2">
+                <Label
+                  htmlFor="custom-concepts"
+                  className="text-base font-medium"
+                >
+                  מושגים מרכזיים (מופרדים בפסיקים)
+                </Label>
                 <Input
                   id="custom-concepts"
                   value={conceptInput}
                   onChange={(event) => setConceptInput(event.target.value)}
                   placeholder="משתנים, תנאים, לולאות"
+                  className="h-11"
                 />
-                <div className="flex flex-wrap gap-2 pt-2">
-                  {conceptList.map((concept) => (
-                    <Badge key={concept} variant="outline">
-                      {concept}
-                    </Badge>
-                  ))}
-                </div>
+                {conceptList.length > 0 && (
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {conceptList.map((concept) => (
+                      <Badge
+                        key={concept}
+                        variant="secondary"
+                        className="text-sm px-3 py-1"
+                      >
+                        {concept}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </div>
             </Card>
 
-            <Card className="p-4 space-y-4">
-              <div className="flex items-center justify-between gap-4">
+            <Card className="p-6 space-y-4 border-2 bg-card/50">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h3 className="text-lg font-semibold">משתנים</h3>
-                  <p className="text-sm text-muted-foreground">
-                    הגדירו את המשתנים הראשיים בטבלה נוחה. ניתן לסמן משתנה לקבלת קלט
-                    מהמשתמש.
+                  <h3 className="text-xl font-semibold flex items-center gap-2">
+                    <span className="text-2xl">🔢</span>
+                    משתנים
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed mt-1">
+                    הגדירו את המשתנים הראשיים בטבלה נוחה. ניתן לסמן משתנה לקבלת
+                    קלט מהמשתמש.
                   </p>
                 </div>
-                <Button type="button" variant="outline" onClick={handleAddVariable}>
-                  <Plus className="h-4 w-4" /> הוספת משתנה
+                <Button
+                  type="button"
+                  variant="default"
+                  onClick={handleAddVariable}
+                  className="gap-2 h-10 px-5 shadow-sm hover:shadow transition-all shrink-0"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span className="font-medium">הוספת משתנה</span>
                 </Button>
               </div>
 
-              <div className="rounded-md border overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[160px]">שם</TableHead>
-                      <TableHead className="w-[160px]">טיפוס</TableHead>
-                      <TableHead>ערך התחלתי (אופציונלי)</TableHead>
-                      <TableHead className="w-[140px] text-center">
-                        קלט מהמשתמש
-                      </TableHead>
-                      <TableHead className="w-[80px]" />
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {variables.map((variable) => (
-                      <TableRow key={variable.id}>
-                        <TableCell>
-                          <Input
-                            value={variable.name}
-                            onChange={(event) =>
-                              handleVariableChange(variable.id, "name", event.target.value)
-                            }
-                            placeholder="לדוגמה: total"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Select
-                            value={variable.type}
-                            onValueChange={(value: VariableType) =>
-                              handleVariableChange(variable.id, "type", value)
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {variableTypeOptions.map((option) => (
-                                <SelectItem key={option} value={option}>
-                                  {variableTypeLabels[option]}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            value={variable.initialValue}
-                            onChange={(event) =>
-                              handleVariableChange(
-                                variable.id,
-                                "initialValue",
-                                event.target.value
-                              )
-                            }
-                            placeholder="לדוגמה: 0"
-                          />
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Switch
-                            checked={variable.requireInput}
-                            onCheckedChange={(checked) =>
-                              handleVariableChange(variable.id, "requireInput", checked)
-                            }
-                            aria-label="קלט מהמשתמש"
-                          />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {variables.length > 1 && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleRemoveVariable(variable.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </TableCell>
+              {variables.length === 0 ? (
+                <div className="rounded-lg border-2 border-dashed p-12 text-center">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="text-5xl opacity-50">🔢</div>
+                    <h4 className="text-lg font-semibold text-muted-foreground">
+                      עדיין לא הוספתם משתנים
+                    </h4>
+                    <p className="text-sm text-muted-foreground max-w-md">
+                      לחצו על כפתור &ldquo;הוספת משתנה&rdquo; כדי להתחיל להגדיר
+                      את המשתנים שלכם
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-lg border-2 overflow-hidden shadow-sm">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="w-48 font-semibold text-base">
+                          שם המשתנה
+                        </TableHead>
+                        <TableHead className="w-52 font-semibold text-base">
+                          טיפוס
+                        </TableHead>
+                        <TableHead className="font-semibold text-base">
+                          ערך התחלתי
+                        </TableHead>
+                        <TableHead className="w-40 text-center font-semibold text-base">
+                          קלט מהמשתמש
+                        </TableHead>
+                        <TableHead className="w-20" />
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {variables.map((variable, index) => (
+                        <TableRow
+                          key={variable.id}
+                          className={index % 2 === 0 ? "bg-muted/20" : ""}
+                        >
+                          <TableCell className="p-3">
+                            <Input
+                              value={variable.name}
+                              onChange={(event) =>
+                                handleVariableChange(
+                                  variable.id,
+                                  "name",
+                                  event.target.value
+                                )
+                              }
+                              placeholder="לדוגמה: total"
+                              className="h-10"
+                            />
+                          </TableCell>
+                          <TableCell className="p-3">
+                            <Select
+                              value={variable.type}
+                              onValueChange={(value: VariableType) =>
+                                handleVariableChange(variable.id, "type", value)
+                              }
+                            >
+                              <SelectTrigger className="h-10">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {variableTypeOptions.map((option) => (
+                                  <SelectItem
+                                    key={option}
+                                    value={option}
+                                    className="text-base"
+                                  >
+                                    {variableTypeLabels[option]}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell className="p-3">
+                            <Input
+                              value={variable.initialValue}
+                              onChange={(event) =>
+                                handleVariableChange(
+                                  variable.id,
+                                  "initialValue",
+                                  event.target.value
+                                )
+                              }
+                              placeholder="אופציונלי"
+                              className="h-10"
+                            />
+                          </TableCell>
+                          <TableCell className="text-center p-3">
+                            <div className="flex items-center justify-center">
+                              <Switch
+                                checked={variable.requireInput}
+                                onCheckedChange={(checked) =>
+                                  handleVariableChange(
+                                    variable.id,
+                                    "requireInput",
+                                    checked
+                                  )
+                                }
+                                aria-label="קלט מהמשתמש"
+                              />
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center p-3">
+                            {variables.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() =>
+                                  handleRemoveVariable(variable.id)
+                                }
+                                className="h-9 w-9 hover:bg-destructive/10 hover:text-destructive transition-colors"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
             </Card>
 
-            <Card className="p-4 space-y-4">
+            <Card className="p-6 space-y-4 border-2 bg-card/50">
               <div>
-                <h3 className="text-lg font-semibold">בניית הקוד</h3>
-                <p className="text-sm text-muted-foreground">
-                  כתבו את גוף הפונקציה בלבד. מעטפת הקוד נוספה עבורכם. ניתן להשתמש
-                  בכפתורים להוספת קטעי קוד שכיחים.
+                <h3 className="text-xl font-semibold flex items-center gap-2">
+                  <span className="text-2xl">⚙️</span>
+                  בניית הקוד
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed mt-1">
+                  כתבו את גוף הפונקציה בלבד. מעטפת הקוד נוספה עבורכם. ניתן
+                  להשתמש בכפתורים להוספת קטעי קוד שכיחים.
                 </p>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                {snippetPresets.map((preset) => (
-                  <Button
-                    key={preset.label}
-                    type="button"
-                    variant="outline"
-                    onClick={() => handleInsertSnippet(preset.snippet)}
-                    className="flex items-center gap-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    {preset.label}
-                  </Button>
-                ))}
+              <div className="space-y-3">
+                <Label className="text-base font-medium">קטעי קוד מהירים</Label>
+                <div className="flex flex-wrap gap-2">
+                  {snippetPresets.map((preset) => (
+                    <Button
+                      key={preset.label}
+                      type="button"
+                      variant="outline"
+                      onClick={() => handleInsertSnippet(preset.snippet)}
+                      className="flex items-center gap-2 h-9 text-sm hover:bg-primary/10 hover:border-primary/50 transition-colors"
+                      title={preset.description}
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      {preset.label}
+                    </Button>
+                  ))}
+                </div>
               </div>
 
-              <Textarea
-                ref={codeEditorRef}
-                value={codeBody}
-                onChange={(event) => setCodeBody(event.target.value)}
-                rows={8}
-                dir="ltr"
-                placeholder="// כתבו כאן את הקוד שלכם"
-              />
+              <div className="space-y-3">
+                <Label htmlFor="code-editor" className="text-base font-medium">
+                  קוד התרגיל
+                </Label>
+                <Textarea
+                  id="code-editor"
+                  ref={codeEditorRef}
+                  value={codeBody}
+                  onChange={(event) => setCodeBody(event.target.value)}
+                  rows={10}
+                  dir="ltr"
+                  placeholder='// כתבו כאן את הקוד שלכם&#10;// לדוגמה:&#10;int sum = a + b;&#10;printf("Sum: %d", sum);'
+                  className="font-mono text-sm resize-none"
+                />
+              </div>
             </Card>
           </div>
         </ScrollArea>
 
-        <DialogFooter className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          {error && <p className="text-sm text-destructive">{error}</p>}
-          <div className="flex gap-2 w-full sm:w-auto">
+        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-4 pt-6 border-t mt-auto shrink-0">
+          {error && (
+            <div className="w-full sm:flex-1">
+              <div className="text-sm text-destructive font-medium bg-destructive/10 px-4 py-3 rounded-lg border border-destructive/20 flex items-start gap-2">
+                <span className="text-lg shrink-0">⚠️</span>
+                <span>{error}</span>
+              </div>
+            </div>
+          )}
+          <div className="flex gap-3 w-full sm:w-auto sm:ml-auto shrink-0">
             <Button
               type="button"
               variant="outline"
-              className="flex-1 sm:flex-none"
+              className="flex-1 sm:flex-none h-12 px-8 font-medium text-base hover:bg-muted transition-colors"
               onClick={() => handleClose(false)}
             >
               ביטול
             </Button>
-            <Button type="button" className="flex-1 sm:flex-none" onClick={handleSubmit}>
-              שמירת תרגיל
+            <Button
+              type="button"
+              className="flex-1 sm:flex-none h-12 px-8 font-medium text-base shadow-sm hover:shadow-lg transition-all bg-primary hover:bg-primary/90"
+              onClick={handleSubmit}
+            >
+              <span className="flex items-center gap-2">✨ שמירת תרגיל</span>
             </Button>
           </div>
         </DialogFooter>

@@ -132,10 +132,13 @@ export default function Home() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-background to-muted/20 p-4 md:p-8">
-        <div className="flex flex-col items-center gap-3" dir="rtl">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">
+      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-background via-muted/10 to-muted/30 p-4 md:p-8">
+        <div
+          className="flex flex-col items-center gap-4 p-8 rounded-lg bg-card/50 backdrop-blur-sm shadow-lg"
+          dir="rtl"
+        >
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="text-base text-foreground font-medium">
             טוען את נתוני הסימולטור...
           </p>
         </div>
@@ -144,8 +147,11 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-background to-muted/20 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
+    <div
+      className="min-h-screen bg-linear-to-br from-background via-muted/10 to-muted/30 py-6 px-4 md:py-10 md:px-8"
+      dir="rtl"
+    >
+      <div className="max-w-7xl mx-auto w-full">
         {!selectedExample ? (
           <ExampleSelector
             examples={examples}
@@ -154,15 +160,15 @@ export default function Home() {
             onRemoveExample={(example) => handleRemoveCustom(example.id)}
           />
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <Button
               variant="outline"
               onClick={handleBack}
-              className="gap-2"
-              dir="rtl"
+              className="gap-2 px-6 h-11 shadow-sm hover:shadow-md transition-all"
+              size="lg"
             >
-              <ArrowRight className="h-4 w-4" />
-              חזרה לבחירת תרגיל
+              <ArrowRight className="h-5 w-5" />
+              <span className="font-medium">חזרה לבחירת תרגיל</span>
             </Button>
             <CodeVisualizer example={selectedExample} inputs={currentInputs} />
           </div>
